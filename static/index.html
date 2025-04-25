@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Language Online Compiler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --background-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .navbar {
+            background: rgba(45, 45, 45, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 2rem;
+        }
+
+        .editor-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .editor-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .CodeMirror {
+            height: 400px;
+            font-family: 'Fira Code', monospace;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .output-area {
+            background: #282a36;
+            color: #f8f8f2;
+            padding: 1.5rem;
+            border-radius: 8px;
+            min-height: 150px;
+            font-family: 'Fira Code', monospace;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .output-area::before {
+            content: '$ Output';
+            position: absolute;
+            top: 0.5rem;
+            left: 1rem;
+            font-size: 0.8rem;
+            color: rgba(248, 248, 242, 0.5);
+        }
+
+        .run-btn {
+            background: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 2rem;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .run-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+        }
+
+        .run-btn:active {
+            transform: translateY(0);
+        }
+
+        .run-btn i {
+            font-size: 1.2rem;
+        }
+
+        .error-text {
+            color: #ff5555;
+            padding: 0.5rem;
+            border-left: 3px solid #ff5555;
+            margin-top: 0.5rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .success-text {
+            color: #50fa7b;
+            padding: 0.5rem;
+            border-left: 3px solid #50fa7b;
+            margin-top: 0.5rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .loading {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .loading div {
+            position: absolute;
+            border: 4px solid var(--primary-color);
+            opacity: 1;
+            border-radius: 50%;
+            animation: loading 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 0;
+            }
+            4.9% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 0;
+            }
+            5% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                top: 0px;
+                left: 0px;
+                width: 72px;
+                height: 72px;
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: rgba(45, 45, 45, 0.5);
+            border-radius: 8px;
+        }
+
+        .toolbar button {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .toolbar button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            color: rgba(248, 248, 242, 0.7);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 1rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-color);
+        }
+
+        .status-text {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .language-selector {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-right: 1rem;
+        }
+
+        .language-selector:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .language-selector option {
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .template-selector {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .template-selector:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-code me-2"></i>
+                    Multi-Language Online Compiler
+                </div>
+            </a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <h1 class="title text-center animate__animated animate__fadeIn">Multi-Language Online Compiler</h1>
+        
+        <div class="editor-card animate__animated animate__fadeInUp">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <select id="language-select" class="language-selector" onchange="changeLanguage()">
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                    </select>
+                    <button class="template-selector" onclick="loadTemplate()">
+                        <i class="fas fa-file-code me-1"></i> Load Template
+                    </button>
+                </div>
+
+                <div class="toolbar">
+                    <button onclick="clearEditor()">
+                        <i class="fas fa-trash-alt me-1"></i> Clear
+                    </button>
+                    <button onclick="copyCode()">
+                        <i class="fas fa-copy me-1"></i> Copy
+                    </button>
+                    <button onclick="downloadCode()">
+                        <i class="fas fa-download me-1"></i> Download
+                    </button>
+                </div>
+
+                <textarea id="code-editor"></textarea>
+                
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="status-bar">
+                        <div class="status-indicator"></div>
+                        <span class="status-text">Ready to execute</span>
+                    </div>
+                    <button class="run-btn" onclick="executeCode()">
+                        <i class="fas fa-play"></i>
+                        Run Code
+                    </button>
+                </div>
+                
+                <div class="mt-4">
+                    <div id="output" class="output-area">
+                        <div class="text-muted">Output will appear here...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script src="https://kit.fontawesome.com/2c36e9b7b1.js" crossorigin="anonymous"></script>
+    <script>
+        // Initialize CodeMirror
+        var editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
+            mode: "python",
+            theme: "dracula",
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            indentWithTabs: false,
+            lineWrapping: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            styleActiveLine: true,
+            extraKeys: {
+                "Tab": function(cm) {
+                    if (cm.somethingSelected()) {
+                        cm.indentSelection("add");
+                    } else {
+                        cm.replaceSelection("    ", "end");
+                    }
+                }
+            }
+        });
+
+        // Store language information
+        let languageInfo = {};
+
+        // Check available languages and get templates
+        async function checkAvailableLanguages() {
+            try {
+                const response = await fetch('/get-languages');
+                const data = await response.json();
+                const languageSelect = document.getElementById('language-select');
+                languageInfo = data.languages;
+
+                // Update language options
+                for (const option of languageSelect.options) {
+                    const lang = option.value;
+                    if (!languageInfo[lang].available) {
+                        option.text += ' (Compiler not installed)';
+                        option.disabled = true;
+                    }
+                }
+
+                // Set initial template
+                loadTemplate();
+            } catch (error) {
+                console.error('Error checking available languages:', error);
+            }
+        }
+
+        // Call this when page loads
+        checkAvailableLanguages();
+
+        function changeLanguage() {
+            const language = document.getElementById('language-select').value;
+            editor.setOption('mode', getLanguageMode(language));
+            loadTemplate();
+        }
+
+        function getLanguageMode(language) {
+            switch (language) {
+                case 'python': return 'python';
+                case 'javascript': return 'javascript';
+                case 'java': return 'text/x-java';
+                case 'cpp': return 'text/x-c++src';
+                default: return 'text/plain';
+            }
+        }
+
+        function loadTemplate() {
+            const language = document.getElementById('language-select').value;
+            if (languageInfo[language] && languageInfo[language].template) {
+                editor.setValue(languageInfo[language].template);
+            }
+        }
+
+        function updateStatus(message, isError = false) {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.querySelector('.status-text');
+            
+            statusIndicator.style.background = isError ? '#ff5555' : '#4CAF50';
+            statusText.textContent = message;
+        }
+
+        async function executeCode() {
+            const code = editor.getValue();
+            const language = document.getElementById('language-select').value;
+            const outputDiv = document.getElementById('output');
+            const runBtn = document.querySelector('.run-btn');
+            
+            try {
+                outputDiv.innerHTML = '<div class="loading"><div></div></div>';
+                runBtn.disabled = true;
+                updateStatus('Executing code...');
+                
+                const response = await fetch('/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        code: code,
+                        language: language
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    outputDiv.innerHTML = data.output || 'No output';
+                    if (data.error) {
+                        outputDiv.innerHTML += `<div class="error-text">${data.error}</div>`;
+                        updateStatus('Execution completed with errors', true);
+                    } else {
+                        updateStatus('Execution completed successfully');
+                    }
+                } else {
+                    outputDiv.innerHTML = `<div class="error-text">${data.error}</div>`;
+                    updateStatus('Execution failed', true);
+                }
+            } catch (error) {
+                outputDiv.innerHTML = `<div class="error-text">Error: ${error.message}</div>`;
+                updateStatus('Execution failed', true);
+            } finally {
+                runBtn.disabled = false;
+            }
+        }
+
+        function clearEditor() {
+            editor.setValue('');
+            document.getElementById('output').innerHTML = '<div class="text-muted">Output will appear here...</div>';
+            updateStatus('Ready to execute');
+        }
+
+        function copyCode() {
+            const code = editor.getValue();
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.querySelector('button[onclick="copyCode()"]');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check me-1"></i> Copied!';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+
+        function downloadCode() {
+            const code = editor.getValue();
+            const language = document.getElementById('language-select').value;
+            const extensions = {
+                python: '.py',
+                javascript: '.js',
+                java: '.java',
+                cpp: '.cpp'
+            };
+            
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `code${extensions[language]}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // Add event listener for Ctrl+Enter to run code
+        editor.setOption("extraKeys", {
+            "Ctrl-Enter": function(cm) {
+                executeCode();
+            }
+        });
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    </script>
+</body>
+</html> 
